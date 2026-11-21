@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Student;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class StudentController extends Controller
 {
@@ -21,18 +22,16 @@ class StudentController extends Controller
 
     public function store(Request $request)
     {
-        $validated = $request->validate([
-            'name' => 'required',
-            'email' => 'required|email|unique:students',
-            'phone' => 'required',
-            'address' => 'nullable',
-            'date_of_birth' => 'nullable|date',
-        ]);
+        $request->validate($this->rules());
 
-        Student::create($validated);
+        Student::create($request->all());
 
-        return redirect()->route('students.index')
-            ->with('success', 'Student added successfully!');
+        return redirect()->route('students.index');
+    }
+
+    public function show(Student $student)
+    {
+        //
     }
 
     public function edit(Student $student)
@@ -42,25 +41,32 @@ class StudentController extends Controller
 
     public function update(Request $request, Student $student)
     {
-        $validated = $request->validate([
-            'name' => 'required',
-            'email' => 'required|email|unique:students,email,' . $student->id,
-            'phone' => 'required',
-            'address' => 'nullable',
-            'date_of_birth' => 'nullable|date',
-        ]);
+        $request->validate($this->rules($student));
 
-        $student->update($validated);
+        $student->update($request->all());
 
-        return redirect()->route('students.index')
-            ->with('success', 'Student updated successfully!');
+        return redirect()->route('students.index');
     }
 
     public function destroy(Student $student)
     {
         $student->delete();
 
-        return redirect()->route('students.index')
-            ->with('success', 'Student deleted successfully!');
+        return redirect()->route('students.index');
+    }
+
+    private function rules(?Student $student = null): array
+    {
+        return [
+            'name' => 'required',
+            'email' => [
+                'required',
+                'email',
+                Rule::unique('students')->ignore($student?->id),
+            ],
+            'phone' => 'required',
+            'address' => 'nullable',
+            'date_of_birth' => 'nullable|date',
+        ];
     }
 }
